@@ -1,0 +1,90 @@
+{
+  "name": "comic-viewer",
+  "version": "1.0.0",
+  "description": "ZIP/7Z/RAR 및 폴더 이미지 뷰어",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "postinstall": "node -e \"try{require('fs').chmodSync(require('7zip-bin').path7za,0o755)}catch{}\"",
+    "dist:mac": "electron-builder --mac"
+  },
+  "build": {
+    "appId": "local.comicviewer",
+    "productName": "Comic Viewer",
+    "asarUnpack": [
+      "node_modules/7zip-bin/**"
+    ],
+    "fileAssociations": [
+      {
+        "ext": [
+          "zip",
+          "cbz"
+        ],
+        "name": "ZIP Archive",
+        "role": "Viewer"
+      },
+      {
+        "ext": [
+          "7z",
+          "cb7"
+        ],
+        "name": "7z Archive",
+        "role": "Viewer"
+      },
+      {
+        "ext": [
+          "rar",
+          "cbr"
+        ],
+        "name": "RAR Archive",
+        "role": "Viewer"
+      },
+      {
+        "ext": [
+          "jpg",
+          "jpeg",
+          "png",
+          "gif",
+          "webp",
+          "bmp",
+          "avif"
+        ],
+        "name": "Image",
+        "role": "Viewer"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json",
+      "!node_modules/7zip-bin/linux/**",
+      "!node_modules/7zip-bin/win/**",
+      "!node_modules/7zip-bin/mac/x64/**"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "category": "public.app-category.graphics-design",
+      "identity": "-",
+      "hardenedRuntime": false
+    }
+  },
+  "dependencies": {
+    "7zip-bin": "^5.2.0",
+    "adm-zip": "^0.6.1",
+    "node-unrar-js": "^2.0.2"
+  },
+  "devDependencies": {
+    "electron": "^45.3.3",
+    "electron-builder": "^26.18.0"
+  }
+}

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' blob:; style-src 'self'" />
+  <title>Comic Viewer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="stage" class="fit-screen">
+    <img id="page" alt="" />
+  </div>
+  <div id="empty">
+    <p>압축 파일(zip · 7z · rar) 또는 이미지 파일을 끌어다 놓거나</p>
+    <p><kbd>O</kbd> 키를 눌러 여세요.</p>
+    <ul>
+      <li><kbd>Space</kbd> <kbd>→</kbd> <kbd>↓</kbd> <kbd>PageDown</kbd> 다음</li>
+      <li><kbd>Shift+Space</kbd> <kbd>←</kbd> <kbd>↑</kbd> <kbd>PageUp</kbd> 이전</li>
+      <li><kbd>Home</kbd> / <kbd>End</kbd> 처음 / 마지막</li>
+      <li><kbd>W</kbd> 맞춤 방식 전환 · <kbd>F</kbd> 전체화면 · <kbd>O</kbd> 열기</li>
+    </ul>
+  </div>
+  <div id="status"></div>
+  <div id="toast"></div>
+  <script src="renderer.js"></script>
+</body>
+</html>

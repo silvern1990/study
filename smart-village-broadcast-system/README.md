@@ -12,6 +12,7 @@ smart-village-broadcast-system/
 │       ├── conf/dialplan/svbs.xml  # bcast-{id}, *700, 2xxxx
 │       └── scripts/svbs/*.lua      # broadcast / record / call
 ├── server/                         # NestJS 백엔드
+├── mobile/                         # Flutter 앱 (mobile/README.md)
 └── data/recordings/                # 녹음 파일 (백엔드 ↔ FreeSWITCH 공유)
 ```
 

@@ -1,0 +1,37 @@
+# 개발용 인프라: PostgreSQL, Redis, FreeSWITCH
+# 백엔드(server/)는 호스트에서 `npm run start:dev` 로 실행한다.
+name: svbs
+
+services:
+  postgres:
+    image: postgres:17.6
+    environment:
+      POSTGRES_USER: svbs
+      POSTGRES_PASSWORD: svbs
+      POSTGRES_DB: svbs
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7.4.5
+    ports:
+      - "6379:6379"
+
+  freeswitch:
+    build: ./freeswitch
+    # RTP 포트 대역(16384-32768)을 일일이 매핑하지 않도록 host 네트워크 사용 (Linux 전용)
+    network_mode: host
+    environment:
+      SVBS_API_URL: http://127.0.0.1:3000
+      FS_XMLCURL_USER: freeswitch
+      FS_XMLCURL_PASSWORD: change-me
+      FS_ESL_PASSWORD: ClueCon
+      # EXTERNAL_IP: 1.2.3.4   # 운영 서버의 공인 IP
+    volumes:
+      # 백엔드의 RECORDINGS_DIR 과 같은 디렉터리
+      - ../data/recordings:/recordings
+
+volumes:
+  pgdata:

@@ -1,0 +1,9 @@
+<configuration name="event_socket.conf" description="Socket Client">
+  <settings>
+    <param name="nat-map" value="false"/>
+    <!-- 백엔드만 접속하도록 기본은 127.0.0.1 (FS_ESL_LISTEN_IP 로 변경) -->
+    <param name="listen-ip" value="$${esl_listen_ip}"/>
+    <param name="listen-port" value="8021"/>
+    <param name="password" value="$${esl_password}"/>
+  </settings>
+</configuration>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  앱 사용자는 모두 이 context 로 들어온다 (백엔드 디렉터리 응답의 user_context=svbs).
+-->
+<include>
+  <context name="svbs">
+
+    <!-- 방송 수신: 앱이 푸시를 받고 "받기"를 누르면 bcast-{방송ID} 로 발신 -->
+    <extension name="svbs-broadcast">
+      <condition field="destination_number" expression="^bcast-(\d+)$">
+        <action application="lua" data="svbs/broadcast.lua $1"/>
+      </condition>
+    </extension>
+
+    <!-- 관리자 전화 녹음: *700 -->
+    <extension name="svbs-record">
+      <condition field="destination_number" expression="^\*700$">
+        <action application="lua" data="svbs/record.lua"/>
+      </condition>
+    </extension>
+
+    <!-- 사용자 간 1:1 통화 (내선번호 2xxxx~) -->
+    <extension name="svbs-local">
+      <condition field="destination_number" expression="^(2\d{4,6})$">
+        <action application="lua" data="svbs/call.lua $1"/>
+      </condition>
+    </extension>
+
+  </context>
+</include>

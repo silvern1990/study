@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, screen } = require('electron');
 const path = require('path');
 const fsp = require('fs').promises;
 const { openPath, isArchive, naturalSort, IMAGE_EXTS, ARCHIVE_EXTS } = require('./sources');
@@ -28,9 +28,14 @@ async function loadPath(p) {
 }
 
 function createWindow() {
+  // 너비는 화면의 절반, 높이는 화면 전체, 가운데 정렬 (메뉴바·독 제외한 작업 영역 기준)
+  const area = screen.getPrimaryDisplay().workArea;
+  const width = Math.round(area.width / 2);
   win = new BrowserWindow({
-    width: 1000,
-    height: 1200,
+    x: area.x + Math.round((area.width - width) / 2),
+    y: area.y,
+    width,
+    height: area.height,
     backgroundColor: '#111111',
     title: 'Comic Viewer',
     webPreferences: {

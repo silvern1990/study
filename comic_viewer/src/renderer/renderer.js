@@ -59,9 +59,16 @@ function clearCache() {
   cache.clear();
 }
 
+function updateTitle() {
+  document.title = pages.length
+    ? `${title} (${index + 1} / ${pages.length}) - Comic Viewer`
+    : 'Comic Viewer';
+}
+
 async function render() {
   const i = index;
   const gen = generation;
+  updateTitle();
   try {
     const url = await getUrl(i);
     if (gen !== generation || i !== index || !url) return;
@@ -93,9 +100,13 @@ window.viewer.on('loading', (name) => toast(`여는 중… ${name}`, false, 0));
 
 window.viewer.on('error', (msg) => toast(msg, true, 4000));
 
+window.viewer.on('notice', (msg) => toast(msg, false, 2000));
+
 window.viewer.on('opened', (info) => {
-  generation++;
-  clearCache();
+  if (!info.keepCache) {
+    generation++;
+    clearCache();
+  }
   pages = info.pages;
   title = info.title;
   index = info.start;
@@ -103,6 +114,7 @@ window.viewer.on('opened', (info) => {
   if (!pages.length) {
     document.body.classList.remove('has-pages');
     img.removeAttribute('src');
+    updateTitle();
     toast('이미지가 없습니다', true, 3000);
     return;
   }
@@ -110,8 +122,42 @@ window.viewer.on('opened', (info) => {
   render();
 });
 
+// Alt 조합: 파일명 태그 / 삭제 (맥에서 Alt+문자는 특수문자가 되므로 e.code로 판별)
+const TAG_KEYS = {
+  'KeyA:': 'J', // Alt+A
+  'KeyS:': 'S', // Alt+S
+  'KeyS:shift': 'SS', // Alt+Shift+S
+  'KeyS:ctrl+shift': 'SSS', // Alt+Ctrl+Shift+S
+};
+let busy = false;
+
+async function fileAction(fn) {
+  if (busy || !pages.length) return;
+  busy = true;
+  try { await fn(); } finally { busy = false; }
+}
+
+function handleAltKey(e) {
+  if (e.metaKey) return false;
+  const mods = [e.ctrlKey && 'ctrl', e.shiftKey && 'shift'].filter(Boolean).join('+');
+  const combo = `${e.code}:${mods}`;
+  if (TAG_KEYS[combo]) {
+    if (!e.repeat) fileAction(() => window.viewer.tagFile(index, TAG_KEYS[combo]));
+    return true;
+  }
+  if (combo === 'KeyD:shift') { // Alt+Shift+D: 확인 없이 삭제
+    if (!e.repeat) fileAction(() => window.viewer.deleteFile(index));
+    return true;
+  }
+  return false;
+}
+
 document.addEventListener('keydown', (e) => {
-  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (e.altKey) {
+    if (handleAltKey(e)) e.preventDefault();
+    return;
+  }
+  if (e.metaKey || e.ctrlKey) return;
   switch (e.key) {
     case ' ':
       go(index + (e.shiftKey ? -1 : 1));
@@ -137,6 +183,9 @@ document.addEventListener('keydown', (e) => {
     case 'F':
     case 'Enter':
       window.viewer.toggleFullscreen();
+      break;
+    case 'Escape':
+      window.viewer.quit();
       break;
     case 'o':
     case 'O':

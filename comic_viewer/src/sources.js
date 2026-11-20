@@ -160,6 +160,13 @@ class ZipSource {
  * - 디렉토리: 디렉토리 내 이미지, 0페이지부터
  */
 async function openPath(target) {
+  const r = await openPathInner(target);
+  // 압축 파일이면 원본 경로를 기억 (이름 변경 / 삭제 대상)
+  if (isArchive(target) && !r.source.dir) r.source.archivePath = target;
+  return r;
+}
+
+async function openPathInner(target) {
   const stat = await fsp.stat(target);
   if (stat.isDirectory()) {
     return { source: await DirectorySource.open(target, path.basename(target)), start: 0 };
@@ -177,4 +184,4 @@ async function openPath(target) {
   throw new Error(`지원하지 않는 파일 형식입니다: ${path.basename(target)}`);
 }
 
-module.exports = { openPath, isImage, isArchive, IMAGE_EXTS, ARCHIVE_EXTS };
+module.exports = { openPath, isImage, isArchive, naturalSort, IMAGE_EXTS, ARCHIVE_EXTS };

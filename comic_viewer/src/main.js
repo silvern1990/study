@@ -1,6 +1,7 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
-const { openPath, IMAGE_EXTS, ARCHIVE_EXTS } = require('./sources');
+const fsp = require('fs').promises;
+const { openPath, isArchive, naturalSort, IMAGE_EXTS, ARCHIVE_EXTS } = require('./sources');
 
 let win = null;
 let current = null; // 현재 열린 소스
@@ -86,6 +87,90 @@ ipcMain.handle('open-dialog', async () => {
 });
 
 ipcMain.on('open-path', (_e, p) => { if (p) loadPath(p); });
+
+/* ---------- 파일명 태그 / 삭제 ---------- */
+const TAGS = ['J', 'S', 'SS', 'SSS'];
+const TAG_RE = /^\[(?:J|S|SS|SSS)\]\s*/;
+
+// 지금 보고 있는 "파일": 압축 파일이면 압축 파일 자체, 아니면 현재 이미지
+function currentFilePath(i) {
+  if (!current) return null;
+  if (current.archivePath) return current.archivePath;
+  if (current.dir && current.pages[i] != null) return path.join(current.dir, current.pages[i]);
+  return null;
+}
+
+function sendOpened(start, keepCache) {
+  win.setTitle(`${current.title} - Comic Viewer`);
+  win.webContents.send('opened', { title: current.title, pages: current.pages, start, keepCache });
+}
+
+ipcMain.handle('tag-file', async (_e, i, tag) => {
+  if (!TAGS.includes(tag)) return;
+  const file = currentFilePath(i);
+  if (!file) return;
+  const base = path.basename(file);
+  const newBase = `[${tag}]${base.replace(TAG_RE, '')}`; // 기존 태그는 교체
+  if (newBase === base) { win.webContents.send('notice', `이미 [${tag}] 입니다`); return; }
+  const target = path.join(path.dirname(file), newBase);
+  try {
+    await fsp.access(target);
+    win.webContents.send('error', `같은 이름의 파일이 이미 있습니다: ${newBase}`);
+    return;
+  } catch {}
+  try {
+    await fsp.rename(file, target);
+  } catch (e) {
+    win.webContents.send('error', `이름 변경 실패: ${e.message}`);
+    return;
+  }
+  if (current.archivePath) {
+    current.archivePath = target;
+    current.title = newBase;
+  } else {
+    current.pages[i] = newBase;
+  }
+  sendOpened(i, true); // 내용은 같으므로 캐시 유지
+  win.webContents.send('notice', `→ ${newBase}`);
+});
+
+async function nextArchiveAfter(deletedPath) {
+  const dir = path.dirname(deletedPath);
+  const name = path.basename(deletedPath);
+  const list = (await fsp.readdir(dir)).filter((n) => isArchive(n) && !n.startsWith('.')).sort(naturalSort);
+  const next = list.find((n) => naturalSort(n, name) > 0) || list[list.length - 1];
+  return next ? path.join(dir, next) : null;
+}
+
+ipcMain.handle('delete-file', async (_e, i) => {
+  const file = currentFilePath(i);
+  if (!file) return;
+  try {
+    await shell.trashItem(file); // 휴지통으로 이동 (확인 없음)
+  } catch (e) {
+    win.webContents.send('error', `삭제 실패: ${e.message}`);
+    return;
+  }
+  const name = path.basename(file);
+  if (current.archivePath) {
+    // 압축 파일을 지웠으면 같은 폴더의 다음 압축 파일을 연다
+    await current.close();
+    current = null;
+    const next = await nextArchiveAfter(file);
+    if (next) {
+      await loadPath(next);
+    } else {
+      win.setTitle('Comic Viewer');
+      win.webContents.send('opened', { title: '', pages: [], start: 0 });
+    }
+  } else {
+    current.pages.splice(i, 1);
+    sendOpened(Math.min(i, current.pages.length - 1), false);
+  }
+  win.webContents.send('notice', `삭제됨: ${name}`);
+});
+
+ipcMain.on('quit', () => app.quit());
 
 ipcMain.on('toggle-fullscreen', () => { if (win) win.setFullScreen(!win.isFullScreen()); });
 
